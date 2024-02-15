@@ -1,0 +1,22 @@
+{
+  "name": "code2clipboard",
+  "version": "1.0.0",
+  "description": "Simple utility to copy multiple files to the clipboard",
+  "main": "code2clipboard.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jeff Rigby",
+  "license": "ISC",
+  "dependencies": {
+    "clipboardy": "^4.0.0",
+    "dotenv": "^16.4.1",
+    "istextorbinary": "^9.5.0",
+    "micromatch": "^4.0.5",
+    "mime-types": "^2.1.35",
+    "yargs": "^17.7.2"
+  },
+  "bin": {
+    "code2cb": "code2clipboard/code2clipboard.mjs"
+  }
+}
