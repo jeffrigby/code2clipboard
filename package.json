@@ -17,6 +17,6 @@
     "yargs": "^17.7.2"
   },
   "bin": {
-    "code2cb": "code2clipboard/code2clipboard.mjs"
+    "code2cb": "./code2clipboard.mjs"
   }
 }
