@@ -1,6 +1,55 @@
-# copy2clipboard CLI Tool
+# code2clipboard CLI Tool
 
-This documentation covers the usage, configuration options, and setup process for the `copy2clipboard` command-line interface (CLI) tool. This Node.js application is designed to scan a specified directory for source code files, format their content, and copy it to the clipboard for easy pasting elsewhere, such as a GitHub Gist or a ChatGPT.
+This documentation covers the usage, configuration options, and setup process for the
+`code2clipboard` (`copy2cb` for short) command-line interface (CLI) tool.
+This Node.js application is designed to scan a specified directory for source code files,
+format their content, and copy it to the clipboard for easy pasting elsewhere, such as a
+GitHub Gist or a ChatGPT.
+
+## Example Output
+
+When you run the `code2clipboard` tool, it formats the selected files' content and metadata, preparing it for
+copying to the clipboard.
+
+Here's an example of what the tool copies, based on the specified options and
+configurations:
+
+```
+Project Description:: Description of the project if specified in the arguments
+
+Tree Structure
+├── src
+│   ├── index.js
+│   └── config.js
+
+--------------------------------------------------------------------------------
+File: src/index.js
+Content Type: application/javascript, Size: 1.45 KB, Last Modified: 2024-02-15
+--------------------------------------------------------------------------------
+//************** Start src/index.js **************//
+console.log('Hello, world!');
+// Example function
+function greet(name) {
+  console.log(`Hello, ${name}!`);
+}
+greet('code2clipboard');
+//************** End src/index.js **************//
+
+--------------------------------------------------------------------------------
+File: src/config.js
+Content Type: application/javascript, Size: 0.97 KB, Last Modified: 2024-02-15
+--------------------------------------------------------------------------------
+//************** Start src/config.js **************//
+// Configuration options
+const config = {
+  greeting: 'Hello, world!',
+};
+module.exports = config;
+//************** End src/config.js **************//
+```
+
+This output provides a clear and organized way to copy and share code suitable for pasting into
+app like ChatGPT or GitHub Gists, or other platforms.
 
 ## Requirements
 
@@ -9,7 +58,7 @@ This documentation covers the usage, configuration options, and setup process fo
 
 ## Installation
 
-First, clone the repository or download the source code to your local machine. Then, navigate to the root directory of the application (`copy2clipboard`) and run the following command to install the necessary dependencies:
+First, clone the repository or download the source code to your local machine. Then, navigate to the root directory of the application (`code2clipboard`) and run the following command to install the necessary dependencies:
 
 ```sh
 npm install
@@ -21,16 +70,18 @@ Or, if you use Yarn:
 yarn install
 ```
 
-For convenience, it's recommended to run `npm link` or `yarn link` to make the `copy2clipboard` command available globally on your system.
+For convenience, it's recommended to run `npm link` or `yarn link` to make the `code2clipboard` command available globally on your system.
 
 ## Usage
 
-The `copy2clipboard` tool is executed from the command line. Navigate to the root directory of the application and use the following syntax to run the tool:
+The `code2clipboard` tool is executed from the command line. Navigate to the root directory of the application and use the following syntax to run the tool:
 
 ```sh
 node /path/to/code2clipboard.mjs [options]
 ```
+
 or if you have linked the package you can run this from anywhere:
+
 ```sh
 code2cb [options]
 ```
@@ -42,12 +93,14 @@ The tool supports several command-line options to customize the scanning and cop
 - `--max-depth, -d`: Maximum depth for directory scanning. Default is 5.
 - `--max-filesize, -s`: Maximum file size in kilobytes (KB) to consider for copying. Default is 100 KB.
 - `--max-files, -f`: Maximum number of files to process and copy to the clipboard. Default is 10.
-- `--add-ignore, -ai`: Additional patterns to ignore during file scanning. This parameter should be a CSV string.
-- `--add-extensions, -ae`: Additional file extensions to include during file scanning. This parameter should be a CSV string.
+- `--add-ignore, -i`: Additional patterns to ignore during file scanning. This parameter should be a CSV string.
+- `--add-extensions, -e`: Additional file extensions to include during file scanning. This parameter should be a CSV string.
 - `--directory, -dir`: Directory to scan for files. Defaults to the current working directory (`process.cwd()`).
-- `--ignore, -i` Override ignore patterns entirely. This parameter can be used multiple times to specify multiple patterns. `--ignore node_modules --ignore .git` will ignore both `node_modules` and `.git` directories.
-- `--extensions, -e`: Override the default file extensions entirely. This parameter can be used multiple times to specify multiple extensions. `--extensions js --extensions ts` will include both `.js` and `.ts` files.
-- `--omit-tree, -ot`: Omit the visual file tree from the copied content. Defaults to `false`.
+- `--ignore, --oi` Override ignore patterns entirely. Enter multiple entries as CSV. `--ignore node_modules,.git` will ignore both `node_modules` and `.git` directories.
+- `--extensions, --oe`: Override the default file extensions entirely. Enter multiple extensions as a CSV string. For example, `--extensions js,ts,jsx,tsx,mjs` will only consider JavaScript and TypeScript
+- `--omit-tree, --ot`: Omit the visual file tree from the copied content. Defaults to `false`.
+- `--output-to-console, -c`: Output the copied content to the console in addition to the clipboard. Defaults to `false`.
+- `--use-markdown-delimiter, -md`: Use markdown delimiters for the copied content. Defaults to `false`.
 
 ## Configuration
 
@@ -61,6 +114,8 @@ The `config.mjs` file holds the default configuration and environment variable m
 - `OMIT_TREE`: Set to `true` to omit the file tree from the copied content.
 - `EXTENSIONS`: Overrides the default file extensions entirely, specified as a CSV string.
 - `IGNORE`: Overrides the default ignore patterns entirely, specified as a CSV string.
+- `OUTPUT_TO_CONSOLE`: Set to `true` to output the copied content to the console in addition to the clipboard.
+- `USE_MARKDOWN_DELIMETER`: Set to `true` to use markdown delimiters for the copied content instead of comment (Defaults to `//************** Start/End PATH **************//`)
 
 Here's an example of what the `.env` file might look like:
 
@@ -113,9 +168,12 @@ Limit directory scanning to 2 levels deep:
 code2cb -d 2
 ```
 
-### Limiting to only JS files
-```
-code2cb -e mjs -e cjs -e ts -e js;
+### Limiting to only JS/TS files
+
+Limit the file extensions to only javascript/typescript files:
+
+```sh
+code2cb --oe mjs,cjs,ts,js,jsx,tsx;
 ```
 
 ### Adjusting Maximum File Size
@@ -139,15 +197,16 @@ code2cb -f 5
 Ignore `dist` and `test` directories:
 
 ```sh
-code2cb --ignore dist --ignore test
+code2cb --ignore dist,test
+code2cb -i dist,test
 ```
 
 ### Adding File Extensions
 
-Include `.txt` files in addition to the default set:
+Include `.txt` and `.log` files in addition to the default set:
 
 ```sh
-code2cb --add-extensions txt
+code2cb --add-extensions txt,log
 ```
 
 ### Omitting the File Tree
@@ -160,10 +219,10 @@ code2cb --omit-tree
 
 ### Comprehensive Example
 
-Combine multiple options to tailor the copying process. In this example, we're scanning up to 3 directory levels deep in the `/src` directory for files up to 200KB in size. We aim to copy a maximum of 20 files, ignoring the `node_modules` and `.git` directories and adding `.txt` files to the default list of file extensions. We also choose to omit the file tree from the copied content:
+Combine multiple options to tailor the copying process. In this example, we're scanning up to 3 directory levels deep in the `/src` directory for files up to 200KB in size. We aim to copy a maximum of 20 files, ignoring only the `node_modules` and `.git` directories and adding `.txt` files to the default list of file extensions. We also choose to omit the file tree from the copied content:
 
 ```sh
-code2cb -d 3 -s 200 -f 20 --directory /src --ignore node_modules --ignore .git --add-extensions txt --omit-tree
+code2cb -d 3 -s 200 -f 20 --directory /src --ignore node_modules,.git --add-extensions txt --omit-tree
 ```
 
-These examples cover a range of use cases that demonstrate the versatility and flexibility of the `copy2clipboard` tool. Users can mix and match options according to their specific needs, making it convenient to quickly copy and share code or file contents.
+These examples cover a range of use cases that demonstrate the versatility and flexibility of the `code2clipboard` tool. Users can mix and match options according to their specific needs, making it convenient to quickly copy and share code or file contents.

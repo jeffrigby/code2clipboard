@@ -62,7 +62,7 @@ async function scanDirectory(dir, depth = 0) {
  * @returns {Promise<boolean>} - True if the file is binary, otherwise false.
  */
 async function isBinaryFile(filePath) {
-  const buffer = await fs.readFile(filePath, { encoding: "utf8", flag: "r" });
+  const buffer = await fs.readFile(filePath, { encoding: 'utf8', flag: 'r' });
   return !isText(filePath, buffer);
 }
 
@@ -102,9 +102,13 @@ async function formatFileContent(filePath) {
     `--------------------------------------------------------------------------------\n` +
     `File: ${relativePath}\n` +
     `Content Type: ${contentType}, Size: ${fileSize} KB, Last Modified: ${lastModified}\n` +
-    `--------------------------------------------------------------------------------\n`;
+    `--------------------------------------------------------------------------------`;
 
-  return `${fileHeader}\`\`\`\n${content.trim()}\n\`\`\`\n`;
+  const useMarkdownDelimiter = argv['use-markdown-delimiter'];
+  const startComment = useMarkdownDelimiter ? '```' : `//************** Start ${relativePath} **************//`;
+  const endComment = useMarkdownDelimiter ? '```' : `//************** End ${relativePath} **************//`;
+
+  return `${fileHeader}\n${startComment}\n${content.trim()}\n${endComment}\n`;
 }
 
 function buildAndPrintTree(paths) {

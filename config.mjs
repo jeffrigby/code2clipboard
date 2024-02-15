@@ -25,12 +25,13 @@ export const config = {
   MAX_DEPTH: process.env.MAX_DEPTH || 5,
   MAX_FILE_SIZE: process.env.MAX_FILE_SIZE || 100,
   MAX_FILES: process.env.MAX_FILES || 10,
-  ADD_IGNORE: process.env.ADD_IGNORE ? splitAndTrimCsv(process.env.ADD_IGNORE) : [],
-  ADD_EXTENSIONS: process.env.ADD_EXTENSIONS ? splitAndTrimCsv(process.env.ADD_EXTENSIONS) : [],
+  ADD_IGNORE: process.env.ADD_IGNORE ? process.env.ADD_IGNORE : '',
+  ADD_EXTENSIONS: process.env.ADD_EXTENSIONS ? process.env.ADD_EXTENSIONS : '',
   OMIT_TREE: process.env.OMIT_TREE === 'true',
   OUTPUT_TO_CONSOLE: process.env.OUTPUT_TO_CONSOLE === 'true',
+  USE_MARKDOWN_DELIMITER: process.env.USE_MARKDOWN_DELIMITER === 'true',
   EXTENSIONS: process.env.EXTENSIONS
-    ? splitAndTrimCsv(process.env.EXTENSIONS)
+    ? process.env.EXTENSIONS
     : [
         'js',
         'ts',
@@ -96,7 +97,7 @@ export const config = {
         'wiki',
       ],
   IGNORE: process.env.IGNORE
-    ? splitAndTrimCsv(process.env.IGNORE)
+    ? process.env.IGNORE
     : [
         'node_modules',
         '.git',
@@ -186,15 +187,17 @@ const argv = yargs(hideBin(process.argv))
     default: config.MAX_FILES,
   })
   .option('add-ignore', {
-    alias: 'ai',
-    describe: 'Additional patterns to ignore',
-    type: 'array',
+    alias: 'i',
+    describe: 'Additional patterns to ignore. Enter as a comma-separated list of patterns.',
+    type: 'string',
+    coerce: splitAndTrimCsv,
     default: config.ADD_IGNORE,
   })
   .option('add-extensions', {
-    alias: 'ae',
-    describe: 'Additional file extensions to include',
-    type: 'array',
+    alias: 'e',
+    describe: 'Additional file extensions to include. Enter as a comma-separated list of patterns.',
+    type: 'string',
+    coerce: splitAndTrimCsv,
     default: config.ADD_EXTENSIONS,
   })
   .option('directory', {
@@ -204,15 +207,17 @@ const argv = yargs(hideBin(process.argv))
     default: process.cwd(),
   })
   .option('ignore', {
-    alias: 'i',
-    describe: 'Override ignore patterns entirely',
-    type: 'array',
+    alias: 'oi',
+    describe: 'Override ignore patterns entirely. Enter as a comma-separated list of patterns.',
+    type: 'string',
+    coerce: splitAndTrimCsv,
     default: config.IGNORE,
   })
   .option('extensions', {
-    alias: 'e',
-    describe: 'Override extensions entirely',
-    type: 'array',
+    alias: 'oe',
+    describe: 'Override extensions entirely. Enter as a comma-separated list of patterns.',
+    type: 'string',
+    coerce: splitAndTrimCsv,
     default: config.EXTENSIONS,
   })
   .option('omit-tree', {
@@ -233,14 +238,23 @@ const argv = yargs(hideBin(process.argv))
     type: 'boolean',
     default: config.OUTPUT_TO_CONSOLE,
   })
+  .option('use-markdown-delimiter', {
+    alias: 'md',
+    describe: 'Use markdown delimiter for code blocks (may not work with all file types, e.g. .md)',
+    type: 'boolean',
+    default: config.USE_MARKDOWN_DELIMITER,
+  })
   .parse();
 
 /**
  * Splits a CSV string into an array with each value trimmed.
- * @param {string} csvString The CSV string to split.
+ * @param {string|array} csvString The CSV string to split.
  * @return {string[]} An array of trimmed values.
  */
 function splitAndTrimCsv(csvString) {
+  // Ignore if csvString is already an array
+  if (Array.isArray(csvString)) return csvString;
+
   if (!csvString) return [];
   return csvString.split(',').map((item) => item.trim());
 }
@@ -317,5 +331,11 @@ export const PROJECT_DESCRIPTION = argv['project-description'];
  * @type {boolean}
  */
 export const OUTPUT_TO_CONSOLE = argv['output-to-console'];
+
+/**
+ * Use markdown delimiter for code blocks (may not work with all file types, e.g. .md).
+ * @type {boolean}
+ */
+export const USE_MARKDOWN_DELIMITER = argv['use-markdown-delimiter'];
 
 export { argv };
