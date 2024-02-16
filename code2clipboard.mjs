@@ -19,10 +19,12 @@ import micromatch from 'micromatch';
 import mime from 'mime-types';
 import { isText } from 'istextorbinary';
 
+// Global variables
 const matchedFiles = [];
 let ignoredFilesCount = 0;
 let ignoredDirectoriesCount = 0;
 let totalMatchedFilesCount = 0;
+const fileExtensionCounts = new Map();
 
 /**
  * Checks if a path should be ignored based on ignore patterns.
@@ -91,7 +93,11 @@ async function isAllowedFile(filePath) {
   const binaryCheck = await isBinaryFile(filePath);
   if (binaryCheck) return false; // Skip binary files.
 
-  return size <= MAX_FILE_SIZE && (EXTENSIONS.has(extension) || EXTENSIONS.size === 0);
+  const allowed = size <= MAX_FILE_SIZE && (EXTENSIONS.has(extension) || EXTENSIONS.size === 0);
+  if (allowed) {
+    fileExtensionCounts.set(extension, (fileExtensionCounts.get(extension) || 0) + 1);
+  }
+  return allowed;
 }
 
 /**
@@ -166,7 +172,11 @@ function buildAndPrintTree(paths) {
 function logSearchConfig(targetDir) {
   console.log(`Configuration:`);
   console.log(`- Directory: ${targetDir}`);
-  console.log(`- Max Depth: ${MAX_DEPTH} File Size: ${MAX_FILE_SIZE / 1024}kb Files: ${MAX_FILES}`);
+  console.log(`- Max Depth: ${MAX_DEPTH} Max File Size: ${MAX_FILE_SIZE / 1024}kb Max Files: ${MAX_FILES}`);
+
+  if (EXTENSIONS.size > 0) {
+    console.log(`- Match Extensions: ${Array.from(EXTENSIONS).join(', ')}`);
+  }
 }
 
 /**
@@ -179,6 +189,25 @@ function removeExcessLineBreaks(content) {
 }
 
 /**
+ * Outputs the statistics of file extensions that match the specified criteria.*
+ * @return {void}
+ */
+function outputExtensionStats() {
+  // Check if there are any extensions to report
+  if (fileExtensionCounts.size === 0) {
+    return;
+  }
+
+  // Convert Map to Array, sort by count, and prepare for compact display
+  const sortedExtensions = Array.from(fileExtensionCounts.entries()).sort((a, b) => b[1] - a[1]);
+  const extensionStats = sortedExtensions
+    .map(([extension, count]) => `${extension ? extension : 'no extension'}: ${count}`)
+    .join(', ');
+
+  console.log(chalk.blue(`Matched extension: ${extensionStats}`));
+}
+
+/**
  * Outputs the statistics of the copy function to the console.
  * @param {Awaited<{formattedContent: string, size: number}>[]} formattedContents - The total size of the copied files in kilobytes.
  * @return {void}
@@ -187,13 +216,21 @@ function outputStats(formattedContents) {
   const totalSizeKB = formattedContents.reduce((acc, item) => acc + item.size, 0) / 1024;
   const excludedFilesCount = totalMatchedFilesCount - matchedFiles.length; // Calculate excluded files
 
-  console.log(chalk.green(`${matchedFiles.length} files to the clipboard, totaling ${totalSizeKB.toFixed(2)} KB.`));
+  if (matchedFiles.length === 0) {
+    console.log(chalk.red('No files found.'));
+  } else {
+    console.log(chalk.green(`${matchedFiles.length} files to the clipboard, totaling ${totalSizeKB.toFixed(2)} KB.`));
+  }
 
-  console.log(
-    chalk.yellow(
-      `Ignored ${ignoredFilesCount} files and ${ignoredDirectoriesCount} directories based on the ignore configuration.`,
-    ),
-  );
+  if (ignoredFilesCount > 0 || ignoredDirectoriesCount > 0) {
+    console.log(
+      chalk.yellow(
+        `Skipped ${ignoredFilesCount} files and ${ignoredDirectoriesCount} directories based on the ignore configuration.`,
+      ),
+    );
+  }
+
+  outputExtensionStats();
 
   if (excludedFilesCount > 0) {
     console.log(
@@ -255,8 +292,11 @@ async function main() {
     if (OUTPUT_TO_CONSOLE) {
       console.log(clipboardContent);
     }
-    clipboardy.writeSync(clipboardContent);
-    console.log(`\nCopied Files:\n${tree}`);
+
+    if (formattedContents.length > 0) {
+      clipboardy.writeSync(clipboardContent);
+      console.log(`\nCopied Files:\n${tree}`);
+    }
     outputStats(formattedContents);
   } catch (error) {
     console.error('Error:', error.message);

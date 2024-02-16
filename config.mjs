@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { defaultIgnore } from './defaultIgnore.mjs';
+import chalk from 'chalk';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -101,7 +102,8 @@ const argv = yargs(hideBin(process.argv))
   })
   .option('extensions', {
     alias: 'e',
-    describe: 'Only copy file matching the extension added here. Enter as a comma-separated list of patterns.',
+    describe:
+      'Only copy files matching the extension added here, this will override the ignore patterns. Enter as a comma-separated list of patterns.',
     type: 'string',
     coerce: splitAndTrimCsv,
     default: config.EXTENSIONS,
@@ -153,24 +155,69 @@ function splitAndTrimCsv(csvString) {
 }
 
 /**
- * Expands ignore patterns based on given input patterns.
- * @param {string[]} patterns - The input patterns to expand.
- * @param {string[]} ignoreExtensions - additional file extensions to ignore.
- * @return {string[]} - The expanded ignore patterns.
+ * Filters out patterns for extensions explicitly included by the user.
+ * @param {string[]} patterns - The input patterns to filter.
+ * @param {Set<string>} includedExtensions - Extensions explicitly passed by the user.
+ * @return {string[]} - Filtered patterns.
  */
-function expandIgnorePatterns(patterns, ignoreExtensions) {
-  if (ignoreExtensions.length > 0) {
-    patterns = patterns.concat(ignoreExtensions.map((ext) => `**/*.${ext.replace(/^\./, '')}`));
-  }
+function filterIncludedExtensions(patterns, includedExtensions) {
+  return patterns.filter((pattern) => {
+    if (!pattern.startsWith('*.')) return true; // Keep non-extension patterns
 
+    const extension = pattern.slice(2); // Remove '*.' prefix
+    if (includedExtensions.has(extension)) {
+      console.log(chalk.red(`Excluding '${pattern}' from ignore list as '${extension}' is explicitly included.`));
+      return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * Adds ignore patterns for specified extensions.
+ * @param {string[]} patterns - Existing patterns.
+ * @param {string[]} extensionsToIgnore - File extensions to ignore.
+ * @return {string[]} - Updated patterns including new ignore patterns for extensions.
+ */
+function addIgnoreExtensions(patterns, extensionsToIgnore) {
+  const ignorePatterns = extensionsToIgnore.map((ext) => `**/*.${ext.startsWith('.') ? ext.slice(1) : ext}`);
+  return patterns.concat(ignorePatterns);
+}
+
+/**
+ * Expands ignore patterns for directories to include their contents.
+ * @param {string[]} patterns - The patterns to expand.
+ * @return {string[]} - Expanded patterns.
+ */
+function expandDirectoryPatterns(patterns) {
   return patterns.flatMap((pattern) => {
-    // For directories (assumed by not having a file extension), ignore the directory and its contents
     if (pattern.endsWith('/') || (!pattern.includes('.') && !pattern.startsWith('*'))) {
+      // Assume pattern is a directory if it ends with '/' or does not contain '.' and does not start with '*'
       return [`**/${pattern}/**`, `**/${pattern}`];
     }
-    // For files or patterns with wildcards, apply them at any depth
-    return [`**/${pattern}`];
+    return [`**/${pattern}`]; // Apply file or wildcard patterns at any depth
   });
+}
+
+/**
+ * Expands ignore patterns based on given input patterns, extensions to ignore, and user-specified extensions.
+ * @param {string[]} patterns - The input patterns to expand.
+ * @param {string[]} ignoreExtensions - Additional file extensions to ignore.
+ * @param {Set<string>} userExtensions - The file extensions explicitly passed by the user.
+ * @return {string[]} - The expanded ignore patterns.
+ */
+function expandIgnorePatterns(patterns, ignoreExtensions, userExtensions) {
+  let filteredPatterns = patterns;
+
+  if (userExtensions.size > 0) {
+    filteredPatterns = filterIncludedExtensions(patterns, userExtensions);
+  }
+
+  if (ignoreExtensions.length > 0) {
+    filteredPatterns = addIgnoreExtensions(filteredPatterns, ignoreExtensions);
+  }
+
+  return expandDirectoryPatterns(filteredPatterns);
 }
 
 /**
@@ -214,7 +261,7 @@ export const IGNORE_FILES =
  * EXPANDED_IGNORE represents a variable used to store the expanded ignore patterns.
  * @type {string[]}
  */
-export const EXPANDED_IGNORE = expandIgnorePatterns(IGNORE_FILES, argv['extensions-ignore']);
+export const EXPANDED_IGNORE = expandIgnorePatterns(IGNORE_FILES, argv['extensions-ignore'], EXTENSIONS);
 
 /**
  * The description of the project.
