@@ -60,7 +60,7 @@ yarn install
 ```
 
 For convenience, it's **recommended** to run `npm link` or `yarn link` to make the `code2clipboard` command available globally on your system.
-It will install the command globally and you can run it from anywhere in your terminal. It additionally installs a shorthand command `code2cb`.
+It will install the command globally, and you can run it from anywhere in your terminal. It additionally installs a shorthand command `code2cb`.
 
 ## Usage
 
@@ -86,7 +86,7 @@ The tool supports several command-line options to customize the scanning and cop
 - `--extensions-ignore, --ei`: Ignore specific extensions. Specified as a CSV string. Enter multiple extensions as a CSV string. For example, `--extensions md,txt` will ignore markdown and text files
 - `--omit-tree, --ot`: Omit the visual file tree from the copied content. Defaults to `false`.
 - `--output-to-console, -c`: Output the copied content to the console and the clipboard. Defaults to `false`.
-- `--use-markdown-delimiter, -md`: Use markdown code delimiters (```) for the copied content. Defaults to `false` to prevent conflicting with markdown files.
+- `--use-markdown-delimiter, -md`: Use Markdown code delimiters (```) for the copied content. Defaults to `false` to prevent conflicting with markdown files.
 
 ## Configuration Overrides
 

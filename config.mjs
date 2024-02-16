@@ -215,7 +215,6 @@ export const IGNORE_FILES =
  * @type {string[]}
  */
 export const EXPANDED_IGNORE = expandIgnorePatterns(IGNORE_FILES, argv['extensions-ignore']);
-console.log(EXPANDED_IGNORE);
 
 /**
  * The description of the project.

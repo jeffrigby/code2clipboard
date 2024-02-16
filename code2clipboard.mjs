@@ -20,6 +20,9 @@ import mime from 'mime-types';
 import { isText } from 'istextorbinary';
 
 const matchedFiles = [];
+let ignoredFilesCount = 0;
+let ignoredDirectoriesCount = 0;
+let totalMatchedFilesCount = 0;
 
 /**
  * Checks if a path should be ignored based on ignore patterns.
@@ -45,7 +48,14 @@ async function scanDirectory(dir, depth = 0) {
 
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
-    if (shouldIgnore(fullPath)) continue;
+    if (shouldIgnore(fullPath)) {
+      if (entry.isDirectory()) {
+        ignoredDirectoriesCount++;
+      } else {
+        ignoredFilesCount++;
+      }
+      continue; // Skip further processing for ignored paths
+    }
 
     if (entry.isDirectory()) {
       files = [...files, ...(await scanDirectory(fullPath, depth + 1))];
@@ -111,6 +121,11 @@ async function formatFileContent(filePath) {
   return `${fileHeader}\n${startComment}\n${content.trim()}\n${endComment}\n`;
 }
 
+/**
+ * Builds a tree structure from the given paths and prints it as a string.
+ * @param {string[]} paths - An array of paths.
+ * @returns {string} - The string representation of the tree structure.
+ */
 function buildAndPrintTree(paths) {
   const tree = {};
 
@@ -164,13 +179,49 @@ function removeExcessLineBreaks(content) {
 }
 
 /**
+ * Outputs the statistics of the copy function to the console.
+ * @param {Awaited<{formattedContent: string, size: number}>[]} formattedContents - The total size of the copied files in kilobytes.
+ * @return {void}
+ */
+function outputStats(formattedContents) {
+  const totalSizeKB = formattedContents.reduce((acc, item) => acc + item.size, 0) / 1024;
+  const excludedFilesCount = totalMatchedFilesCount - matchedFiles.length; // Calculate excluded files
+
+  console.log(chalk.green(`${matchedFiles.length} files to the clipboard, totaling ${totalSizeKB.toFixed(2)} KB.`));
+
+  console.log(
+    chalk.yellow(
+      `Ignored ${ignoredFilesCount} files and ${ignoredDirectoriesCount} directories based on the ignore configuration.`,
+    ),
+  );
+
+  if (excludedFilesCount > 0) {
+    console.log(
+      chalk.red(
+        `Maximum number of files copied: ${MAX_FILES.toLocaleString()}. ${excludedFilesCount.toLocaleString()} files were not included due to the max files limit. You can increase this with the --max-files or -f (code2cb -f 200) option.`,
+      ),
+    );
+    console.log(
+      chalk.red(
+        `To further refine the selection, exclude specific file types with --extensions-ignore or --ei argument (code2cb --ei txt,md,json) or use -i for more complex patterns.`,
+      ),
+    );
+  }
+}
+
+/**
  * Main function to execute the script.
  */
 async function main() {
   try {
     const targetDir = argv.directory;
     logSearchConfig(targetDir);
-    const files = (await scanDirectory(targetDir)).slice(0, MAX_FILES);
+    const allMatchedFiles = await scanDirectory(targetDir);
+    totalMatchedFilesCount = allMatchedFiles.length;
+
+    // Prune the list of files to the maximum number of files
+    const files = allMatchedFiles.slice(0, MAX_FILES);
+
     const formattedContentsPromises = files.map(async (filePath) => {
       const content = await fs.readFile(filePath, 'utf8');
       return {
@@ -181,7 +232,6 @@ async function main() {
 
     const formattedContents = await Promise.all(formattedContentsPromises);
     let clipboardContent = formattedContents.map((item) => item.formattedContent).join('\n');
-    const totalSizeKB = formattedContents.reduce((acc, item) => acc + item.size, 0) / 1024;
 
     let header = '';
 
@@ -192,7 +242,7 @@ async function main() {
 
     const tree = buildAndPrintTree(matchedFiles);
     if (!OMIT_TREE) {
-      const treeFormatted = `Tree Structure\n\`\`\`\n${tree}\`\`\`\n`;
+      const treeFormatted = `\nTree Structure:\n${tree}\n`;
       header += treeFormatted;
     }
 
@@ -207,15 +257,7 @@ async function main() {
     }
     clipboardy.writeSync(clipboardContent);
     console.log(`\nCopied Files:\n${tree}`);
-    console.log(chalk.green(`${matchedFiles.length} files to the clipboard, totaling ${totalSizeKB.toFixed(2)} KB.`));
-
-    if (matchedFiles.length === MAX_FILES) {
-      console.log(
-        chalk.red(
-          `Maximum number of files copied: ${MAX_FILES}. You can increase this with the --max-files or -f (code2cb -f 200) option.`,
-        ),
-      );
-    }
+    outputStats(formattedContents);
   } catch (error) {
     console.error('Error:', error.message);
   }
