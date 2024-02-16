@@ -2,15 +2,17 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import clipboardy from 'clipboardy';
+import chalk from 'chalk';
 import {
   MAX_FILE_SIZE,
   MAX_FILES,
   MAX_DEPTH,
-  ALLOWED_EXTENSIONS,
+  EXTENSIONS,
   OMIT_TREE,
   EXPANDED_IGNORE,
   PROJECT_DESCRIPTION,
   OUTPUT_TO_CONSOLE,
+  USE_MARKDOWN_DELIMITER,
   argv,
 } from './config.mjs';
 import micromatch from 'micromatch';
@@ -79,7 +81,7 @@ async function isAllowedFile(filePath) {
   const binaryCheck = await isBinaryFile(filePath);
   if (binaryCheck) return false; // Skip binary files.
 
-  return size <= MAX_FILE_SIZE && ALLOWED_EXTENSIONS.has(extension);
+  return size <= MAX_FILE_SIZE && (EXTENSIONS.has(extension) || EXTENSIONS.size === 0);
 }
 
 /**
@@ -101,13 +103,11 @@ async function formatFileContent(filePath) {
   const fileHeader =
     `--------------------------------------------------------------------------------\n` +
     `File: ${relativePath}\n` +
-    `Content Type: ${contentType}, Size: ${fileSize} KB, Last Modified: ${lastModified}\n` +
+    `Content-Type: ${contentType}, Size: ${fileSize} KB, Last Modified: ${lastModified}\n` +
     `--------------------------------------------------------------------------------`;
 
-  const useMarkdownDelimiter = argv['use-markdown-delimiter'];
-  const startComment = useMarkdownDelimiter ? '```' : `//************** Start ${relativePath} **************//`;
-  const endComment = useMarkdownDelimiter ? '```' : `//************** End ${relativePath} **************//`;
-
+  const startComment = USE_MARKDOWN_DELIMITER ? '```' : `//************** Start ${relativePath} **************//`;
+  const endComment = USE_MARKDOWN_DELIMITER ? '```' : `//************** End ${relativePath} **************//`;
   return `${fileHeader}\n${startComment}\n${content.trim()}\n${endComment}\n`;
 }
 
@@ -152,8 +152,6 @@ function logSearchConfig(targetDir) {
   console.log(`Configuration:`);
   console.log(`- Directory: ${targetDir}`);
   console.log(`- Max Depth: ${MAX_DEPTH} File Size: ${MAX_FILE_SIZE / 1024}kb Files: ${MAX_FILES}`);
-  // console.debug(`- Extensions: ${[...EXPANDED_IGNORE].join(', ')}`);
-  // console.debug(`- Ignore Patterns: ${IGNORE_FILES.join(', ')}`);
 }
 
 /**
@@ -209,7 +207,15 @@ async function main() {
     }
     clipboardy.writeSync(clipboardContent);
     console.log(`\nCopied Files:\n${tree}`);
-    console.log(`${matchedFiles.length} files to the clipboard, totaling ${totalSizeKB.toFixed(2)} KB.`);
+    console.log(chalk.green(`${matchedFiles.length} files to the clipboard, totaling ${totalSizeKB.toFixed(2)} KB.`));
+
+    if (matchedFiles.length === MAX_FILES) {
+      console.log(
+        chalk.red(
+          `Maximum number of files copied: ${MAX_FILES}. You can increase this with the --max-files or -f (code2cb -f 200) option.`,
+        ),
+      );
+    }
   } catch (error) {
     console.error('Error:', error.message);
   }

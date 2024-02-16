@@ -3,6 +3,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
+import { defaultIgnore } from './defaultIgnore.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,148 +25,40 @@ dotenv.config({ path: envPath });
 export const config = {
   MAX_DEPTH: process.env.MAX_DEPTH || 5,
   MAX_FILE_SIZE: process.env.MAX_FILE_SIZE || 100,
-  MAX_FILES: process.env.MAX_FILES || 10,
+  MAX_FILES: process.env.MAX_FILES || 100,
   ADD_IGNORE: process.env.ADD_IGNORE ? process.env.ADD_IGNORE : '',
+  EXTENSIONS_IGNORE: process.env.EXTENSIONS_IGNORE ? process.env.EXTENSIONS_IGNORE : '',
+  IGNORE: process.env.IGNORE ? process.env.IGNORE : defaultIgnore,
   ADD_EXTENSIONS: process.env.ADD_EXTENSIONS ? process.env.ADD_EXTENSIONS : '',
   OMIT_TREE: process.env.OMIT_TREE === 'true',
   OUTPUT_TO_CONSOLE: process.env.OUTPUT_TO_CONSOLE === 'true',
   USE_MARKDOWN_DELIMITER: process.env.USE_MARKDOWN_DELIMITER === 'true',
-  EXTENSIONS: process.env.EXTENSIONS
-    ? process.env.EXTENSIONS
-    : [
-        'js',
-        'ts',
-        'mjs',
-        'cjs',
-        'java',
-        'c',
-        'cpp',
-        'cs',
-        'py',
-        'rb',
-        'go',
-        'rs',
-        'swift',
-        'kt',
-        'php',
-        'lua',
-        'html',
-        'htm',
-        'xml',
-        'xhtml',
-        'md',
-        'markdown',
-        'css',
-        'scss',
-        'sass',
-        'less',
-        'sh',
-        'bash',
-        'ps1',
-        'bat',
-        'cmd',
-        'json',
-        'yaml',
-        'yml',
-        'toml',
-        'ini',
-        'cfg',
-        'conf',
-        'ejs',
-        'pug',
-        'hbs',
-        'twig',
-        'sql',
-        'psql',
-        'plsql',
-        'db',
-        'accdb',
-        'pl',
-        'r',
-        'vb',
-        'vbs',
-        'json5',
-        'csv',
-        'tsv',
-        'groovy',
-        'dart',
-        'wasm',
-        'toml',
-        'gradle',
-        'properties',
-        'rst',
-        'wiki',
-      ],
-  IGNORE: process.env.IGNORE
-    ? process.env.IGNORE
-    : [
-        'node_modules',
-        '.git',
-        'dist',
-        'build',
-        'package-lock.json',
-        'yarn.lock',
-        '.idea',
-        '.vscode',
-        '.DS_Store',
-        'out',
-        'bin',
-        'obj',
-        '.cache',
-        'cache',
-        'tmp',
-        'temp',
-        'logs',
-        '*.log',
-        '.env',
-        '.env.local',
-        '.env.development',
-        '.env.production',
-        '*.config.js',
-        '*.config.json',
-        'secret',
-        '*.pem',
-        '*.key',
-        '__tests__',
-        '__mocks__',
-        '*.spec.js',
-        '*.test.js',
-        'bower_components',
-        '*.tar.gz',
-        '*.zip',
-        '*.rar',
-        'Thumbs.db',
-        'ehthumbs.db',
-        'Desktop.ini',
-        '.aws-sam',
-        'samconfig.toml',
-        'coverage',
-        'venv',
-        '.venv',
-        '.npm',
-        '.yarn',
-        '.history',
-        '*.out',
-        '*.err',
-        '*.dmp',
-        '*.bak',
-        '.temp',
-        '.tmp',
-        '.sass-cache',
-      ],
+  EXTENSIONS: process.env.EXTENSIONS ? process.env.EXTENSIONS : '', // Allow all file extensions by default
 };
 
 /**
- * Command-line arguments parsed using yargs.
- * @typedef {Object} Argv
- * @property {number} max-depth - Maximum depth for directory scanning. Defaults to value specified in process.env.MAX_DEPTH or defaults.MAX_DEPTH.
- * @property {number} max-filesize - Maximum file size in kilobytes (KB). Defaults to value specified in process.env.MAX_FILE_SIZE or defaults.MAX_FILE_SIZE.
- * @property {number} max-files - Maximum number of files. Defaults to value specified in process.env.MAX_FILES or defaults.MAX_FILES.
- * @property {string[]} add-ignore - Additional patterns to ignore. Defaults to value specified in process.env.ADD_IGNORE or defaults.ADD_IGNORE.
- * @property {string[]} add-extensions - Additional file extensions to include. Defaults to value specified in process.env.ADD_EXTENSIONS or defaults.ADD_EXTENSIONS.
- * @property {string} directory - Directory to scan. Defaults to current working directory (process.cwd()).
- * @property {string[]} ignore - Override ignore patterns entirely. Defaults to value specified in process.env.IGNORE or defaults.IGNORE.
- * @property {string[]} extensions - Override extensions entirely. Defaults to value specified in process.env.EXTENSIONS or defaults.EXTENSIONS.
+ * The `argv` variable is used to parse and store command line arguments using the yargs library.
+ * It provides an easy way to define and handle command line options and arguments.
+ *
+ * @type {Object}
+ * @property {number} max-depth - Maximum depth for directory scanning. Default value is `config.MAX_DEPTH`.
+ * @property {number} max-filesize - Maximum file size in kilobytes (KB). Default value is `config.MAX_FILE_SIZE`.
+ * @property {number} max-files - Maximum number of files. Default value is `config.MAX_FILES`.
+ * @property {string[]} add-ignore - Additional patterns to ignore. Enter as a comma-separated list of patterns. Use * as a wildcard.
+ *   Default value is `config.ADD_IGNORE`.
+ * @property {string} directory - Directory to scan. Default value is the current working directory.
+ * @property {string[]} ignore - Override ignore patterns entirely. Enter as a comma-separated list of patterns. Use * as a wildcard.
+ *   Default value is `config.IGNORE`.
+ * @property {string[]} extensions - Only copy file matching the extension added here. Enter as a comma-separated list of patterns.
+ *   Default value is `config.EXTENSIONS`.
+ * @property {string[]} extensions-ignore - Ignore files matching the extension added here. Enter as a comma-separated list of patterns.
+ *   Default value is `config.EXTENSIONS_IGNORE`.
+ * @property {boolean} omit-tree - Omit the tree from the copied content. Default value is `config.OMIT_TREE`.
+ * @property {string} project-description - Provide a brief description of the project. Default value is an empty string.
+ * @property {boolean} output-to-console - Output the copied content to the console instead of the clipboard.
+ *   Default value is `config.OUTPUT_TO_CONSOLE`.
+ * @property {boolean} use-markdown-delimiter - Use markdown delimiter for code blocks (may not work with all file types, e.g. .md).
+ *   Default value is `config.USE_MARKDOWN_DELIMITER`.
  */
 const argv = yargs(hideBin(process.argv))
   .option('max-depth', {
@@ -188,17 +81,10 @@ const argv = yargs(hideBin(process.argv))
   })
   .option('add-ignore', {
     alias: 'i',
-    describe: 'Additional patterns to ignore. Enter as a comma-separated list of patterns.',
+    describe: 'Additional patterns to ignore. Enter as a comma-separated list of patterns. Use * as a wildcard.',
     type: 'string',
     coerce: splitAndTrimCsv,
     default: config.ADD_IGNORE,
-  })
-  .option('add-extensions', {
-    alias: 'e',
-    describe: 'Additional file extensions to include. Enter as a comma-separated list of patterns.',
-    type: 'string',
-    coerce: splitAndTrimCsv,
-    default: config.ADD_EXTENSIONS,
   })
   .option('directory', {
     alias: 'dir',
@@ -208,17 +94,24 @@ const argv = yargs(hideBin(process.argv))
   })
   .option('ignore', {
     alias: 'oi',
-    describe: 'Override ignore patterns entirely. Enter as a comma-separated list of patterns.',
+    describe: 'Override ignore patterns entirely. Enter as a comma-separated list of patterns. Use * as a wildcard.',
     type: 'string',
     coerce: splitAndTrimCsv,
     default: config.IGNORE,
   })
   .option('extensions', {
-    alias: 'oe',
-    describe: 'Override extensions entirely. Enter as a comma-separated list of patterns.',
+    alias: 'e',
+    describe: 'Only copy file matching the extension added here. Enter as a comma-separated list of patterns.',
     type: 'string',
     coerce: splitAndTrimCsv,
     default: config.EXTENSIONS,
+  })
+  .option('extensions-ignore', {
+    alias: 'ei',
+    describe: 'Ignore files matching the extension added here. Enter as a comma-separated list of patterns.',
+    type: 'string',
+    coerce: splitAndTrimCsv,
+    default: config.EXTENSIONS_IGNORE,
   })
   .option('omit-tree', {
     alias: 'ot',
@@ -262,9 +155,14 @@ function splitAndTrimCsv(csvString) {
 /**
  * Expands ignore patterns based on given input patterns.
  * @param {string[]} patterns - The input patterns to expand.
+ * @param {string[]} ignoreExtensions - additional file extensions to ignore.
  * @return {string[]} - The expanded ignore patterns.
  */
-function expandIgnorePatterns(patterns) {
+function expandIgnorePatterns(patterns, ignoreExtensions) {
+  if (ignoreExtensions.length > 0) {
+    patterns = patterns.concat(ignoreExtensions.map((ext) => `**/*.${ext.replace(/^\./, '')}`));
+  }
+
   return patterns.flatMap((pattern) => {
     // For directories (assumed by not having a file extension), ignore the directory and its contents
     if (pattern.endsWith('/') || (!pattern.includes('.') && !pattern.startsWith('*'))) {
@@ -300,12 +198,10 @@ export const MAX_DEPTH = argv['max-depth'];
 export const OMIT_TREE = argv['omit-tree'];
 
 /**
- * The set of allowed extensions for file processing.
+ * The set of allowed extensions for file processing. Empty defaults to all file extensions.
  * @type {Set<string>}
  */
-export const ALLOWED_EXTENSIONS = new Set(
-  argv['add-extensions'].length === 0 ? argv['extensions'] : argv['extensions'].concat(argv['add-extensions']),
-);
+export const EXTENSIONS = new Set(argv['extensions'].length > 0 ? argv['extensions'] : '');
 
 /**
  * IGNORE_FILES represents a variable used to store the value of the 'ignore' argument passed through argv.
@@ -318,7 +214,8 @@ export const IGNORE_FILES =
  * EXPANDED_IGNORE represents a variable used to store the expanded ignore patterns.
  * @type {string[]}
  */
-export const EXPANDED_IGNORE = expandIgnorePatterns(IGNORE_FILES);
+export const EXPANDED_IGNORE = expandIgnorePatterns(IGNORE_FILES, argv['extensions-ignore']);
+console.log(EXPANDED_IGNORE);
 
 /**
  * The description of the project.
