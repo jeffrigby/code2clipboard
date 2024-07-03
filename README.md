@@ -86,7 +86,6 @@ The tool supports several command-line options to customize the scanning and cop
 - `--extensions-ignore, --ei`: Ignore specific extensions. Specified as a CSV string. Enter multiple extensions as a CSV string. For example, `--extensions md,txt` will ignore markdown and text files
 - `--omit-tree, --ot`: Omit the visual file tree from the copied content. Defaults to `false`.
 - `--output-to-console, -c`: Output the copied content to the console and the clipboard. Defaults to `false`.
-- `--use-markdown-delimiter, -md`: Use Markdown code delimiters (```) for the copied content. Defaults to `false` to prevent conflicting with markdown files.
 
 ## Configuration Overrides
 
@@ -103,7 +102,6 @@ You can modify the tool's default behavior by setting environment variables in a
 - `EXTENSIONS_IGNORE`: Ignore specific extensions. Specified as a CSV string. `EXTENSIONS_IGNORE=css,html`
 - `IGNORE`: Overrides the default ignore patterns entirely, specified as a CSV string.
 - `OUTPUT_TO_CONSOLE`: Set to `true` to output the copied content to the console and the clipboard.
-- `USE_MARKDOWN_DELIMETER`: Set to `true` to use markdown delimiters for the copied content instead of comment (Defaults to `//************** Start/End PATH **************//`)
 
 Here's an example of what the `.env` file might look like:
 ```

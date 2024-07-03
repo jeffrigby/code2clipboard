@@ -33,7 +33,6 @@ export const config = {
   ADD_EXTENSIONS: process.env.ADD_EXTENSIONS ? process.env.ADD_EXTENSIONS : '',
   OMIT_TREE: process.env.OMIT_TREE === 'true',
   OUTPUT_TO_CONSOLE: process.env.OUTPUT_TO_CONSOLE === 'true',
-  USE_MARKDOWN_DELIMITER: process.env.USE_MARKDOWN_DELIMITER === 'true',
   EXTENSIONS: process.env.EXTENSIONS ? process.env.EXTENSIONS : '', // Allow all file extensions by default
 };
 
@@ -132,12 +131,6 @@ const argv = yargs(hideBin(process.argv))
     describe: 'Output the copied content to the console instead of the clipboard',
     type: 'boolean',
     default: config.OUTPUT_TO_CONSOLE,
-  })
-  .option('use-markdown-delimiter', {
-    alias: 'md',
-    describe: 'Use markdown delimiter for code blocks (may not work with all file types, e.g. .md)',
-    type: 'boolean',
-    default: config.USE_MARKDOWN_DELIMITER,
   })
   .parse();
 
@@ -274,11 +267,5 @@ export const PROJECT_DESCRIPTION = argv['project-description'];
  * @type {boolean}
  */
 export const OUTPUT_TO_CONSOLE = argv['output-to-console'];
-
-/**
- * Use markdown delimiter for code blocks (may not work with all file types, e.g. .md).
- * @type {boolean}
- */
-export const USE_MARKDOWN_DELIMITER = argv['use-markdown-delimiter'];
 
 export { argv };

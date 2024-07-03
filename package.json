@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Simple utility to copy multiple files to the clipboard",
   "main": "code2clipboard.mjs",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,6 +13,7 @@
     "chalk": "^5.3.0",
     "clipboardy": "^4.0.0",
     "dotenv": "^16.4.1",
+    "file-type": "^19.0.0",
     "istextorbinary": "^9.5.0",
     "micromatch": "^4.0.5",
     "mime-types": "^2.1.35",
@@ -27,5 +29,8 @@
     "globals": "^15.8.0",
     "prettier": "^3.2.5",
     "typescript-eslint": "^7.15.0"
+  },
+  "overrides": {
+    "eslint": "^9.6.0"
   }
 }

@@ -12,15 +12,15 @@ import {
   EXPANDED_IGNORE,
   PROJECT_DESCRIPTION,
   OUTPUT_TO_CONSOLE,
-  USE_MARKDOWN_DELIMITER,
   argv,
 } from './config.mjs';
 import micromatch from 'micromatch';
-import mime from 'mime-types';
 import { isText } from 'istextorbinary';
+import { getContentType, getMarkdownCodeBlockType } from './fileExtensionUtils.mjs';
 
 // Global variables
 const matchedFiles = [];
+const skippedFiles = [];
 let ignoredFilesCount = 0;
 let ignoredDirectoriesCount = 0;
 let totalMatchedFilesCount = 0;
@@ -53,16 +53,20 @@ async function scanDirectory(dir, depth = 0) {
     if (shouldIgnore(fullPath)) {
       if (entry.isDirectory()) {
         ignoredDirectoriesCount++;
+        skippedFiles.push({ path: fullPath, reason: 'Ignored Directory' });
       } else {
         ignoredFilesCount++;
+        skippedFiles.push({ path: fullPath, reason: 'Ignored' });
       }
-      continue; // Skip further processing for ignored paths
+      continue;
     }
 
     if (entry.isDirectory()) {
       files = [...files, ...(await scanDirectory(fullPath, depth + 1))];
     } else if (await isAllowedFile(fullPath)) {
       files.push(fullPath);
+    } else {
+      skippedFiles.push({ path: fullPath, reason: 'Not allowed (size or binary)' });
     }
   }
 
@@ -113,18 +117,19 @@ async function formatFileContent(filePath) {
   const content = await fs.readFile(filePath, 'utf8');
   const fileSize = (stats.size / 1024).toFixed(2); // Size in KB
   const lastModified = stats.mtime.toISOString().split('T')[0]; // YYYY-MM-DD format
-  const contentType = mime.lookup(filePath) || 'unknown'; // Determine MIME type based on file extension
+  const contentType = getContentType(filePath);
+  const extension = path.extname(filePath).slice(1).toLowerCase();
+  const codeBlockType = getMarkdownCodeBlockType(extension);
 
-  // Creating a detailed header for each file, now including content type
-  const fileHeader =
-    `--------------------------------------------------------------------------------\n` +
-    `File: ${relativePath}\n` +
-    `Content-Type: ${contentType}, Size: ${fileSize} KB, Last Modified: ${lastModified}\n` +
-    `--------------------------------------------------------------------------------`;
+  return `
+${'-'.repeat(3)}
+### ${relativePath}
+- **Size:** ${fileSize} KB
+- **Last Modified:** ${lastModified}
+- **Content-Type:** ${contentType}
 
-  const startComment = USE_MARKDOWN_DELIMITER ? '```' : `//************** Start ${relativePath} **************//`;
-  const endComment = USE_MARKDOWN_DELIMITER ? '```' : `//************** End ${relativePath} **************//`;
-  return `${fileHeader}\n${startComment}\n${content.trim()}\n${endComment}\n`;
+${makeCodeBlock(content, codeBlockType)}
+`;
 }
 
 /**
@@ -247,6 +252,81 @@ function outputStats(formattedContents) {
 }
 
 /**
+ * Creates a code block with the specified content and language.
+ * @param {string} content - The content of the code block.
+ * @param {string} [language='plaintext'] - The language of the code block. Default is 'plaintext'.
+ * @returns {string} The formatted code block string.
+ */
+function makeCodeBlock(content, language = 'plaintext') {
+  if (language === 'markdown') {
+    return `
+<!-- Start of Markdown file content -->
+${content.trim()}
+<!-- End of Markdown file content -->
+`;
+  }
+
+  const fence = '`'.repeat(10);
+  return `${fence}${language}\n${content.trim()}\n${fence}`;
+}
+
+/**
+ * Generates a summary for a project based on the formatted contents and matched files.
+ * @param {Array} formattedContents - The formatted contents of the matched files.
+ * @param {Array} matchedFiles - The list of files that match the given criteria.
+ * @returns {string} - The generated project summary.
+ */
+function generateProjectSummary(formattedContents, matchedFiles) {
+  const totalFiles = matchedFiles.length;
+  const totalSizeKB = formattedContents.reduce((acc, item) => acc + item.size, 0) / 1024;
+
+  // Count file types
+  const fileTypeCounts = {};
+  matchedFiles.forEach((file) => {
+    const extension = path.extname(file).slice(1).toLowerCase();
+    fileTypeCounts[extension] = (fileTypeCounts[extension] || 0) + 1;
+  });
+
+  // Format file type summary
+  const fileTypeSummary = Object.entries(fileTypeCounts)
+    .map(([ext, count]) => `${ext.toUpperCase()} (${count})`)
+    .join(', ');
+
+  return `## Project Summary:
+- Total Files: ${totalFiles}
+- Total Size: ${totalSizeKB.toFixed(2)} KB
+- File Types: ${fileTypeSummary}`;
+}
+
+/**
+ * Formats a list of skipped files
+ * @returns {string} - The formatted string of skipped files.
+ */
+function formatSkippedFiles() {
+  if (skippedFiles.length === 0) return '';
+
+  const MAX_DISPLAY = 20;
+  const cwd = process.cwd();
+
+  const skippedFilesList = skippedFiles
+    .slice(0, MAX_DISPLAY)
+    .map((file) => {
+      const relativePath = path.relative(cwd, file.path);
+      return `- ${relativePath} (${file.reason})`;
+    })
+    .join('\n');
+
+  let output = `\n### Omitted Files\n${skippedFilesList}\n`;
+
+  if (skippedFiles.length > MAX_DISPLAY) {
+    const remainingCount = skippedFiles.length - MAX_DISPLAY;
+    output += `\n... and ${remainingCount} more file${remainingCount > 1 ? 's' : ''} not shown.\n`;
+  }
+
+  return output;
+}
+
+/**
  * Main function to execute the script.
  */
 async function main() {
@@ -258,6 +338,10 @@ async function main() {
 
     // Prune the list of files to the maximum number of files
     const files = allMatchedFiles.slice(0, MAX_FILES);
+    if (allMatchedFiles.length > MAX_FILES) {
+      const skippedDueToLimit = allMatchedFiles.slice(MAX_FILES);
+      skippedFiles.push(...skippedDueToLimit.map((file) => ({ path: file, reason: 'Exceeded max files limit' })));
+    }
 
     const formattedContentsPromises = files.map(async (filePath) => {
       const content = await fs.readFile(filePath, 'utf8');
@@ -268,20 +352,27 @@ async function main() {
     });
 
     const formattedContents = await Promise.all(formattedContentsPromises);
-    let clipboardContent = formattedContents.map((item) => item.formattedContent).join('\n');
+    let clipboardContent = `\n## Files\n`;
+    clipboardContent += formattedContents.map((item) => item.formattedContent).join('\n');
+
+    const projectSummary = generateProjectSummary(formattedContents, matchedFiles);
 
     let header = '';
 
     if (PROJECT_DESCRIPTION) {
-      const descriptionHeader = `Project Description:\n${PROJECT_DESCRIPTION}\n\n`;
+      const descriptionHeader = `## Project Description:\n${PROJECT_DESCRIPTION}\n\n`;
       header += descriptionHeader;
     }
 
+    header += `${projectSummary}\n\n`;
+
     const tree = buildAndPrintTree(matchedFiles);
     if (!OMIT_TREE) {
-      const treeFormatted = `\nTree Structure:\n${tree}\n`;
+      const treeFormatted = `\n## Tree Structure:\n${makeCodeBlock(tree)}\n`;
       header += treeFormatted;
     }
+
+    header += formatSkippedFiles();
 
     if (header) {
       clipboardContent = `${header}\n${clipboardContent}`;
