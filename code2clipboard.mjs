@@ -121,14 +121,12 @@ async function formatFileContent(filePath) {
   const extension = path.extname(filePath).slice(1).toLowerCase();
   const codeBlockType = getMarkdownCodeBlockType(extension);
 
-  return `
-${'-'.repeat(3)}
-### ${relativePath}
+  return `### ${relativePath}
 - **Size:** ${fileSize} KB
 - **Last Modified:** ${lastModified}
 - **Content-Type:** ${contentType}
-
 ${makeCodeBlock(content, codeBlockType)}
+---
 `;
 }
 
