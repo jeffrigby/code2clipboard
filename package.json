@@ -2,10 +2,15 @@
   "name": "code2clipboard",
   "version": "1.0.0",
   "description": "Simple utility to copy multiple files to the clipboard",
-  "main": "code2clipboard.mjs",
+  "main": "dist/code2cb.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node build.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "author": "Jeff Rigby",
   "license": "ISC",
@@ -20,11 +25,12 @@
     "yargs": "^17.7.2"
   },
   "bin": {
-    "code2cb": "./code2clipboard.mjs",
-    "code2clipboard": "./code2clipboard.mjs"
+    "code2cb": "./dist/code2cb.js",
+    "code2clipboard": "./dist/code2cb.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.6.0",
+    "esbuild": "0.23.0",
     "eslint": "^9.6.0",
     "globals": "^15.8.0",
     "prettier": "^3.2.5",

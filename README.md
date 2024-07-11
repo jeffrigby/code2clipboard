@@ -4,45 +4,62 @@ This documentation covers the usage, configuration options, and setup process fo
 
 ## Example Output
 
-When you run the `code2clipboard` tool, it formats the selected files' content and metadata, preparing it for copying to the clipboard.
+When you run the `code2clipboard` tool, it formats the selected files' content and metadata in markdown format, easily parsed by LLMs.
 
-Here's an example of what the tool copies based on the specified options and configurations:
+Here's an example of what the tool copies:
 
-```
-Project Description: Description of the project if specified in the arguments
+``````````````````````````````````````````````
+## Project Description:
+This project is a sample hello world project.
 
-Tree Structure
-├── src
-│   ├── index.js
-│   └── config.js
+## Project Summary:
+- Total Files: 2
+- Total Size: 0.28 KB
+- File Types: MJS (1), JSON (1)
 
---------------------------------------------------------------------------------
-File: src/index.js
-Content-Type: application/javascript, Size: 1.45 KB, Last Modified: 2024-02-15
---------------------------------------------------------------------------------
-//************** Start src/index.js **************//
-console.log('Hello, world!');
-// Example function
-function greet(name) {
-  console.log(`Hello, ${name}!`);
+## Tree Structure:
+``````````plaintext
+├── hello.mjs
+└── package.json
+``````````
+
+### Omitted Files
+- .idea (Ignored Directory)
+
+## Files
+### hello.mjs
+- **Size:** 0.06 KB
+- **Last Modified:** 2024-07-05
+- **Content-Type:** application/javascript
+``````````javascript
+export async function helloWorld() {
+  return 'Hello, world!';
 }
-greet('code2clipboard');
-//************** End src/index.js **************//
+``````````
+---
 
---------------------------------------------------------------------------------
-File: src/config.js
-Content-Type: application/javascript, Size: 0.97 KB, Last Modified: 2024-02-15
---------------------------------------------------------------------------------
-//************** Start src/config.js **************//
-// Configuration options
-const config = {
-  greeting: 'Hello, world!',
-};
-module.exports = config;
-//************** End src/config.js **************//
-```
+### package.json
+- **Size:** 0.22 KB
+- **Last Modified:** 2024-07-05
+- **Content-Type:** application/json
+``````````json
+{
+  "name": "helloworld",
+  "version": "1.0.0",
+  "main": "index.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
+``````````
+---
+``````````````````````````````````````````````
 
-This output provides a clear and organized way to copy and share code suitable for pasting into apps like ChatGPT, GitHub Gists, or other chatbots.
+This output provides a clear and organized way to copy and share code suitable for pasting into apps like ChatGPT, Claude, GitHub Gists, or other chatbots.
 
 ## Requirements
 - Node.js (minimum LTS version)
@@ -91,9 +108,12 @@ The tool supports several command-line options to customize the scanning and cop
 
 The `config.mjs` file holds the default configuration and environment variable management. The default ignores patterns are set in `defaultIgnore.mjs` and can be overridden by setting the `IGNORE` environment variable.
 
-You can modify the tool's default behavior by setting environment variables in a `.env` file in the root directory. Supported environment variables include:
+You can modify the tool's default behavior by setting environment variables in a `.code2clipboard.env` file in your home directory or the current working directory. The current working directory file takes precedence over the home directory's config file
+
+Supported environment variables include:
 
 - `MAX_DEPTH`: Overrides the default maximum directory scanning depth.
+- `PROJECT_DESCRIPTION`: A custom project description to include in the copied content.
 - `MAX_FILE_SIZE`: Overrides the default maximum file size (in KB).
 - `MAX_FILES`: Overrides the default maximum number of files to process.
 - `ADD_IGNORE`: Additional ignore patterns, specified as a CSV string.
@@ -103,8 +123,9 @@ You can modify the tool's default behavior by setting environment variables in a
 - `IGNORE`: Overrides the default ignore patterns entirely, specified as a CSV string.
 - `OUTPUT_TO_CONSOLE`: Set to `true` to output the copied content to the console and the clipboard.
 
-Here's an example of what the `.env` file might look like:
+Here's an example of what the `.code2clipboard.env` file might look like:
 ```
+PROJECT_DESCRIPTION=This project is a sample hello world project.
 MAX_DEPTH=3
 MAX_FILE_SIZE=200
 ADD_IGNORE=dist,bin
@@ -112,14 +133,7 @@ EXTENSIONS_IGNORE=md,txt
 OMIT_TREE=true
 ```
 
-There's a sample `.env.example` file in the root directory that you can use as a template.
-
-## Package Dependencies
-- `clipboardy`: For copying content to the clipboard.
-- `dotenv`: To manage environment variables.
-- `micromatch`: For matching file paths against patterns.
-- `yargs`: To parse command-line options.
-- `isTextOrBinary`: To determine if a file is a text or binary.
+There's a sample `.code2clipboard.env.example` file in the root directory that you can use as a template.
 
 ## Examples
 

@@ -15,6 +15,7 @@ const markdownCodeBlockTypeMap = new Map([
   ['sass', 'sass'],
   ['less', 'less'],
   ['js', 'javascript'],
+  ['mjs', 'javascript'],
   ['jsx', 'jsx'],
   ['ts', 'typescript'],
   ['tsx', 'tsx'],

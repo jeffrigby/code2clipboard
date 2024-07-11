@@ -5,23 +5,43 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { defaultIgnore } from './defaultIgnore.mjs';
 import chalk from 'chalk';
+import fs from 'fs';
+import os from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const envPath = path.join(__dirname, '.env');
-dotenv.config({ path: envPath });
+
+// Function to load .env file if it exists
+function loadEnvFile(filePath) {
+  if (fs.existsSync(filePath)) {
+    console.log(chalk.green(`Loading environment variables from ${filePath}`));
+    dotenv.config({ path: filePath });
+  }
+}
+
+// Load .code2clipboard.env from home directory
+const homeEnvPath = path.join(os.homedir(), '.code2clipboard.env');
+loadEnvFile(homeEnvPath);
+
+// Load .code2clipboard.env from current working directory (or specified directory)
+const cwdEnvPath = path.join(process.cwd(), '.code2clipboard.env');
+loadEnvFile(cwdEnvPath);
 
 /**
- * Default values for configuration options.
+ * Configuration for the software.
  *
- * @type {object}
- * @property {number} MAX_DEPTH - The maximum depth of directory recursion. Default is 5.
- * @property {number} MAX_FILE_SIZE - The maximum file size (in KB) to consider. Default is 100.
- * @property {number} MAX_FILES - The maximum number of files to process. Default is 10.
- * @property {array} ADD_IGNORE - Additional items to be ignored. Default is an empty array.
- * @property {array} ADD_EXTENSIONS - Additional file extensions to be considered. Default is an empty array.
- * @property {array} EXTENSIONS - The file extensions to be considered. Default includes common programming languages/extensions.
- * @property {array} IGNORE - Directories and files to ignore when processing. Default includes common ignored directories/files.
+ * @typedef {Object} Config
+ * @property {number} MAX_DEPTH - The maximum depth to traverse when scanning the file system. Default is 5.
+ * @property {number} MAX_FILE_SIZE - The maximum file size in MB that will be processed. Default is 100.
+ * @property {number} MAX_FILES - The maximum number of files to process. Default is 100.
+ * @property {string} ADD_IGNORE - Additional patterns to ignore when scanning the file system. Default is an empty string.
+ * @property {string} EXTENSIONS_IGNORE - File extensions to ignore when scanning the file system. Default is an empty string.
+ * @property {string} IGNORE - Patterns to ignore when scanning the file system. If not provided, default patterns will be used.
+ * @property {string} ADD_EXTENSIONS - Additional file extensions to include when scanning the file system. Default is an empty string.
+ * @property {boolean} OMIT_TREE - Whether to omit the directory tree structure in the output. Default is false.
+ * @property {boolean} OUTPUT_TO_CONSOLE - Whether to output the result to the console. Default is false.
+ * @property {string} EXTENSIONS - File extensions to include when scanning the file system. If not provided, all file extensions will be allowed.
+ * @property {string} PROJECT_DESCRIPTION - Description of the project. Default is an empty string.
  */
 export const config = {
   MAX_DEPTH: process.env.MAX_DEPTH || 5,
@@ -34,6 +54,7 @@ export const config = {
   OMIT_TREE: process.env.OMIT_TREE === 'true',
   OUTPUT_TO_CONSOLE: process.env.OUTPUT_TO_CONSOLE === 'true',
   EXTENSIONS: process.env.EXTENSIONS ? process.env.EXTENSIONS : '', // Allow all file extensions by default
+  PROJECT_DESCRIPTION: process.env.PROJECT_DESCRIPTION || '',
 };
 
 /**
@@ -124,7 +145,7 @@ const argv = yargs(hideBin(process.argv))
     alias: 'pd',
     describe: 'Provide a brief description of the project.',
     type: 'string',
-    default: '',
+    default: config.PROJECT_DESCRIPTION,
   })
   .option('output-to-console', {
     alias: 'c',

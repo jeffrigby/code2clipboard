@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { promises as fs } from 'fs';
 import path from 'path';
 import clipboardy from 'clipboardy';
@@ -383,7 +382,7 @@ async function main() {
     }
 
     if (formattedContents.length > 0) {
-      clipboardy.writeSync(clipboardContent);
+      await clipboardy.write(clipboardContent);
       console.log(`\nCopied Files:\n${tree}`);
     }
     outputStats(formattedContents);
