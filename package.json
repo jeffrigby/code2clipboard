@@ -29,14 +29,11 @@
     "code2clipboard": "./dist/code2cb.js"
   },
   "devDependencies": {
-    "@eslint/js": "^9.6.0",
-    "esbuild": "0.23.0",
-    "eslint": "^9.6.0",
-    "globals": "^15.8.0",
+    "@eslint/js": "^9.17.0",
+    "esbuild": "^0.24.2",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
     "prettier": "^3.2.5",
-    "typescript-eslint": "^7.15.0"
-  },
-  "overrides": {
-    "eslint": "^9.6.0"
+    "typescript-eslint": "^8.18.2"
   }
 }
