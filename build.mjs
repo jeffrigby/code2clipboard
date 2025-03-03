@@ -5,7 +5,7 @@ const result = await esbuild.build({
   entryPoints: ['src/code2clipboard.mjs'],
   bundle: true,
   platform: 'node',
-  target: 'node18',
+  target: 'node22',
   outfile: 'dist/code2cb.js',
   format: 'esm',
   banner: {

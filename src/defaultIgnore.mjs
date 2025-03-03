@@ -62,4 +62,5 @@ export const defaultIgnore = [
   'vendor/',
   'venv',
   'yarn.lock',
+  '*.svg'
 ];
